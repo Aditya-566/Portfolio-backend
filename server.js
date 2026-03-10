@@ -52,11 +52,15 @@ app.post('/api/contact', async (req, res) => {
     console.log('GMAIL_PASS configured:', process.env.GMAIL_PASS ? 'Yes' : 'No');
 
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS, // App Password
       },
+      // Force IPv4 to avoid ENETUNREACH with IPv6 on some cloud platforms
+      addressFamily: 4, 
     });
 
     // Verify transporter configuration
