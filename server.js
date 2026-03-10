@@ -49,8 +49,17 @@ app.post('/api/contact', async (req, res) => {
       },
     });
 
+    // Verify transporter configuration
+    try {
+      await transporter.verify();
+      console.log('Server is ready to take our messages');
+    } catch (error) {
+      console.error('Transporter Error:', error);
+      throw new Error('Email service configuration error');
+    }
+
     const mailOptions = {
-      from: email,
+      from: process.env.GMAIL_USER,
       to: 'aditya566sharma@gmail.com',
       subject: `Portfolio Contact from ${name}`,
       text: `Hello Aditya,\n\nYou got a new message from your portfolio website:\n\nName: ${name}\nEmail: ${email}\nMessage:\n${message}`,
@@ -58,7 +67,7 @@ app.post('/api/contact', async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-    
+
     res.status(200).json({ success: true, message: 'Message sent successfully' });
   } catch (error) {
     console.error('Email Error:', error);
