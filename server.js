@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
+  'https://portfolio-frontend-two-hazel.vercel.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
@@ -19,9 +20,12 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (e.g. curl, Postman, mobile apps)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+    
+    if (allowedOrigins.includes(origin) || allowedOrigins.some(ao => ao === origin)) {
       return callback(null, true);
     }
+    
+    console.log('Blocked by CORS:', origin);
     return callback(new Error(`CORS: Origin ${origin} not allowed`));
   },
   methods: ['GET', 'POST', 'OPTIONS'],
