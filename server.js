@@ -39,6 +39,18 @@ app.use(cors({
 // Middleware
 app.use(express.json());
 
+// Helper to resolve Gmail SMTP to IPv4 manually
+const getGmailIpv4 = async () => {
+    try {
+        const addresses = await dns.promises.resolve4('smtp.gmail.com');
+        console.log('Resolved smtp.gmail.com IPv4 addresses:', addresses);
+        return addresses[0]; // Use the first available IPv4
+    } catch (error) {
+        console.error('DNS Resolution for Gmail failed:', error);
+        return 'smtp.gmail.com'; // Fallback to hostname
+    }
+};
+
 // Contact Route
 app.post('/api/contact', async (req, res) => {
   const { name, email, message } = req.body;
@@ -48,43 +60,32 @@ app.post('/api/contact', async (req, res) => {
   }
 
   try {
-    console.log('Attempting to send email from:', name);
-    console.log('GMAIL_USER configured:', process.env.GMAIL_USER ? 'Yes' : 'No');
-    console.log('GMAIL_PASS configured:', process.env.GMAIL_PASS ? 'Yes' : 'No');
+    console.log('--- Email Process Start ---');
+    console.log('From:', name, `(${email})`);
+    
+    const smtpHost = await getGmailIpv4();
+    console.log('Using SMTP Host:', smtpHost);
 
     const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
+      host: smtpHost,
       port: 465,
       secure: true,
       auth: {
         user: process.env.GMAIL_USER,
-        // Clean spaces from App Password if present
         pass: (process.env.GMAIL_PASS || '').replace(/\s/g, ''),
       },
-      // Strictly force IPv4 using custom DNS lookup
-      lookup: (hostname, options, callback) => {
-        dns.lookup(hostname, { family: 4 }, (err, address, family) => {
-          console.log(`Resolved ${hostname} to ${address} (IPv${family})`);
-          callback(err, address, family);
-        });
+      tls: {
+        // Essential when connecting via IP address
+        servername: 'smtp.gmail.com'
       },
-      connectionTimeout: 20000, // 20 seconds
-      greetingTimeout: 20000,
-      socketTimeout: 20000,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 15000,
     });
 
-    // Verify transporter configuration
-    try {
-      await transporter.verify();
-      console.log('Transporter verified successfully');
-    } catch (error) {
-      console.error('Transporter Verification Failed:', error);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Email service configuration error', 
-        details: error.message 
-      });
-    }
+    console.log('Verifying Transporter...');
+    await transporter.verify();
+    console.log('Transporter verified successfully');
 
     const mailOptions = {
       from: process.env.GMAIL_USER,
@@ -94,19 +95,47 @@ app.post('/api/contact', async (req, res) => {
       replyTo: email,
     };
 
+    console.log('Sending Mail...');
     await transporter.sendMail(mailOptions);
     console.log('Email sent successfully');
 
     res.status(200).json({ success: true, message: 'Message sent successfully' });
   } catch (error) {
-    console.error('Final Email Error Catch:', error);
+    console.error('Email Service Error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Failed to send message', 
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      code: error.code
     });
   }
+  console.log('--- Email Process End ---');
+});
+
+// Diagnostic/Test Route
+app.get('/api/contact/test', async (req, res) => {
+    try {
+        console.log('--- SMTP Diagnostic Start ---');
+        const ip = await getGmailIpv4();
+        
+        const transporter = nodemailer.createTransport({
+            host: ip,
+            port: 465,
+            secure: true,
+            auth: {
+                user: process.env.GMAIL_USER,
+                pass: (process.env.GMAIL_PASS || '').replace(/\s/g, ''),
+            },
+            tls: { servername: 'smtp.gmail.com' }
+        });
+
+        await transporter.verify();
+        console.log('Diagnostic: SMTP Connection Ready');
+        res.json({ success: true, message: 'SMTP Connection Verified', host: ip });
+    } catch (error) {
+        console.error('Diagnostic Failed:', error);
+        res.status(500).json({ success: false, error: error.message, code: error.code });
+    }
 });
 
 // Hello endpoint for quick check
