@@ -53,14 +53,17 @@ app.post('/api/contact', async (req, res) => {
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // true for 465, false for other ports
+      port: 465,
+      secure: true, // true for 465, false for other ports
       auth: {
         user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS, // App Password
+        // Clean spaces from App Password if present
+        pass: (process.env.GMAIL_PASS || '').replace(/\s/g, ''),
       },
-      // Force IPv4 to avoid ENETUNREACH with IPv6 on some cloud platforms
+      // Force IPv4 to avoid ENETUNREACH/ETIMEDOUT with IPv6 on some cloud platforms
       addressFamily: 4, 
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000,
     });
 
     // Verify transporter configuration
