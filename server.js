@@ -47,6 +47,10 @@ app.post('/api/contact', async (req, res) => {
   }
 
   try {
+    console.log('Attempting to send email from:', name);
+    console.log('GMAIL_USER configured:', process.env.GMAIL_USER ? 'Yes' : 'No');
+    console.log('GMAIL_PASS configured:', process.env.GMAIL_PASS ? 'Yes' : 'No');
+
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -58,10 +62,14 @@ app.post('/api/contact', async (req, res) => {
     // Verify transporter configuration
     try {
       await transporter.verify();
-      console.log('Server is ready to take our messages');
+      console.log('Transporter verified successfully');
     } catch (error) {
-      console.error('Transporter Error:', error);
-      throw new Error('Email service configuration error');
+      console.error('Transporter Verification Failed:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Email service configuration error', 
+        details: error.message 
+      });
     }
 
     const mailOptions = {
@@ -73,11 +81,17 @@ app.post('/api/contact', async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully');
 
     res.status(200).json({ success: true, message: 'Message sent successfully' });
   } catch (error) {
-    console.error('Email Error:', error);
-    res.status(500).json({ success: false, message: 'Failed to send message', error: error.message });
+    console.error('Final Email Error Catch:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to send message', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
