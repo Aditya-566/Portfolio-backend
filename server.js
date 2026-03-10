@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+import dns from 'dns';
 
 dotenv.config();
 
@@ -54,16 +55,22 @@ app.post('/api/contact', async (req, res) => {
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
-      secure: true, // true for 465, false for other ports
+      secure: true,
       auth: {
         user: process.env.GMAIL_USER,
         // Clean spaces from App Password if present
         pass: (process.env.GMAIL_PASS || '').replace(/\s/g, ''),
       },
-      // Force IPv4 to avoid ENETUNREACH/ETIMEDOUT with IPv6 on some cloud platforms
-      addressFamily: 4, 
-      connectionTimeout: 10000, // 10 seconds
-      greetingTimeout: 10000,
+      // Strictly force IPv4 using custom DNS lookup
+      lookup: (hostname, options, callback) => {
+        dns.lookup(hostname, { family: 4 }, (err, address, family) => {
+          console.log(`Resolved ${hostname} to ${address} (IPv${family})`);
+          callback(err, address, family);
+        });
+      },
+      connectionTimeout: 20000, // 20 seconds
+      greetingTimeout: 20000,
+      socketTimeout: 20000,
     });
 
     // Verify transporter configuration
