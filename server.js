@@ -71,8 +71,8 @@ app.post('/api/contact', async (req, res) => {
       port: 465,
       secure: true,
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: (process.env.GMAIL_PASS || '').replace(/\s/g, ''),
+        user: process.env.EMAIL_USER,
+        pass: (process.env.EMAIL_PASS || '').replace(/\s/g, ''),
       },
       tls: {
         // Essential when connecting via IP address
@@ -88,8 +88,8 @@ app.post('/api/contact', async (req, res) => {
     console.log('Transporter verified successfully');
 
     const mailOptions = {
-      from: process.env.GMAIL_USER,
-      to: 'aditya566sharma@gmail.com',
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_TO,
       subject: `Portfolio Contact from ${name}`,
       text: `Hello Aditya,\n\nYou got a new message from your portfolio website:\n\nName: ${name}\nEmail: ${email}\nMessage:\n${message}`,
       replyTo: email,
@@ -123,8 +123,8 @@ app.get('/api/contact/test', async (req, res) => {
             port: 465,
             secure: true,
             auth: {
-                user: process.env.GMAIL_USER,
-                pass: (process.env.GMAIL_PASS || '').replace(/\s/g, ''),
+                user: process.env.EMAIL_USER,
+                pass: (process.env.EMAIL_PASS || '').replace(/\s/g, ''),
             },
             tls: { servername: 'smtp.gmail.com' }
         });
