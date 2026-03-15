@@ -60,6 +60,10 @@ app.post('/api/contact', async (req, res) => {
       },
       connectionTimeout: 10000,
       socketTimeout: 10000,
+      pool: {
+        maxConnections: 1,
+        maxMessages: Infinity,
+      },
     });
 
     console.log('Verifying Transporter...');
