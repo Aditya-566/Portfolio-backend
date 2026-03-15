@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
-import dns from 'dns';
 
 dotenv.config();
 
@@ -39,18 +38,6 @@ app.use(cors({
 // Middleware
 app.use(express.json());
 
-// Helper to resolve Gmail SMTP to IPv4 manually
-const getGmailIpv4 = async () => {
-    try {
-        const addresses = await dns.promises.resolve4('smtp.gmail.com');
-        console.log('Resolved smtp.gmail.com IPv4 addresses:', addresses);
-        return addresses[0]; // Use the first available IPv4
-    } catch (error) {
-        console.error('DNS Resolution for Gmail failed:', error);
-        return 'smtp.gmail.com'; // Fallback to hostname
-    }
-};
-
 // Contact Route
 app.post('/api/contact', async (req, res) => {
   const { name, email, message } = req.body;
@@ -62,25 +49,17 @@ app.post('/api/contact', async (req, res) => {
   try {
     console.log('--- Email Process Start ---');
     console.log('From:', name, `(${email})`);
-    
-    const smtpHost = await getGmailIpv4();
-    console.log('Using SMTP Host:', smtpHost);
 
     const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: 465,
-      secure: true,
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: (process.env.EMAIL_PASS || '').replace(/\s/g, ''),
       },
-      tls: {
-        // Essential when connecting via IP address
-        servername: 'smtp.gmail.com'
-      },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 15000,
+      connectionTimeout: 10000,
+      socketTimeout: 10000,
     });
 
     console.log('Verifying Transporter...');
@@ -137,12 +116,16 @@ app.get('/api/contact/test', async (req, res) => {
         res.status(500).json({ success: false, error: error.message, code: error.code });
     }
 });
+        const transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: (process.env.EMAIL_PASS || '').replace(/\s/g, ''),
+            },
+        });
 
-// Hello endpoint for quick check
-app.get('/', (req, res) => {
-  res.send('Portfolio Backend is running');
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+        await transporter.verify();
+        console.log('Diagnostic: SMTP Connection Ready');
+        res.json({ success: true, message: 'SMTP Connection Verified'
