@@ -79,27 +79,7 @@ app.post('/api/contact', async (req, res) => {
 // Diagnostic/Test Route
 app.get('/api/contact/test', async (req, res) => {
     try {
-        console.log('--- SMTP Diagnostic Start ---');
-        
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true,
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: (process.env.EMAIL_PASS || '').replace(/\s/g, ''),
-            },
-            tls: {
-                rejectUnauthorized: false,
-            },
-            connectionTimeout: 30000,
-            socketTimeout: 30000,
-        });
-
-        await transporter.verify();
-        console.log('Diagnostic: SMTP Connection Ready');
-        res.json({ success: true, message: 'SMTP Connection Verified' });
-    } catch (error) {endGrid Diagnostic Start ---');
+        console.log('--- SendGrid Diagnostic Start ---');
         
         const msg = {
             to: process.env.EMAIL_TO,
@@ -114,4 +94,15 @@ app.get('/api/contact/test', async (req, res) => {
         res.json({ success: true, message: 'SendGrid Connection Verified - Test email sent' });
     } catch (error) {
         console.error('Diagnostic Failed:', error);
-        res.status(500).json({ success: false, error: error.messag
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Hello endpoint for quick check
+app.get('/', (req, res) => {
+  res.send('Portfolio Backend is running');
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
