@@ -52,18 +52,18 @@ app.post('/api/contact', async (req, res) => {
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: (process.env.EMAIL_PASS || '').replace(/\s/g, ''),
       },
-      connectionTimeout: 10000,
-      socketTimeout: 10000,
-      pool: {
-        maxConnections: 1,
-        maxMessages: Infinity,
+      tls: {
+        rejectUnauthorized: false,
       },
+      connectionTimeout: 30000,
+      socketTimeout: 30000,
+      greetingTimeout: 30000,
     });
 
     console.log('Verifying Transporter...');
@@ -102,12 +102,17 @@ app.get('/api/contact/test', async (req, res) => {
         
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
-            port: 587,
-            secure: false,
+            port: 465,
+            secure: true,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: (process.env.EMAIL_PASS || '').replace(/\s/g, ''),
             },
+            tls: {
+                rejectUnauthorized: false,
+            },
+            connectionTimeout: 30000,
+            socketTimeout: 30000,
         });
 
         await transporter.verify();
